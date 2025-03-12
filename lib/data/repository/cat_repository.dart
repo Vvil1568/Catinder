@@ -4,19 +4,17 @@ import 'package:catinder/data/model/cat_image.dart';
 import 'package:catinder/data/service/api_service.dart';
 
 class CatRepository {
-  final List<CatImage> _queue = [];
+  final List<CatImage> _curBuffer = [];
+  int _bufHead = 0;
   bool _isLoading = false;
-  final int _minThreshold = 5;
+  final int _bufferPadding = 5;
   final int _pageSize = 10;
 
-  final List<Completer<CatImage>> _waitingCompleters = [];
-
-  List<CatImage> get queue => List.unmodifiable(_queue);
+  final Map<int, Completer<CatImage>> _waitingCompleters = {};
 
   CatRepository() {
     _init();
   }
-
   Future<void> _init() async {
     await _loadMoreItems();
   }
@@ -28,52 +26,42 @@ class CatRepository {
 
     try {
       final newItems = await getCatInfo(pageSize: _pageSize);
-
-      _queue.addAll(newItems);
-
-      while (_waitingCompleters.isNotEmpty && _queue.isNotEmpty) {
-        final completer = _waitingCompleters.removeAt(0);
-        completer.complete(_queue.removeAt(0));
+      _curBuffer.addAll(newItems);
+      for (final entry in _waitingCompleters.entries) {
+        if (entry.key < _bufHead + _curBuffer.length) {
+          entry.value.complete(_curBuffer[entry.key - _bufHead]);
+          _waitingCompleters.remove(entry.key);
+        }
+      }
+      if (_waitingCompleters.isNotEmpty) {
+        _loadMoreItems();
       }
     } catch (e) {
-      for (final completer in _waitingCompleters) {
-        completer.completeError(e);
+      for (final entry in _waitingCompleters.entries) {
+        entry.value.completeError(e);
       }
       _waitingCompleters.clear();
     } finally {
       _isLoading = false;
     }
-
-    if (_queue.length < _minThreshold) {
-      await _loadMoreItems();
-    }
   }
 
-  FutureOr<CatImage> top({int offset = 0}) {
-    if (_queue.length > offset) {
-      return _queue[offset];
-    } else {
-      final completer = Completer<CatImage>();
-      _waitingCompleters.add(completer);
-
-      if (!_isLoading) {
-        _loadMoreItems();
-      }
-
-      return completer.future;
+  FutureOr<CatImage> get(int id) {
+    if (id > _bufferPadding * 2 + _bufHead) {
+      _bufHead += _bufferPadding;
+      _curBuffer.removeRange(0, _bufferPadding);
     }
-  }
-
-  void pop() {
-    if (_queue.isNotEmpty) {
-      if (_queue.length < _minThreshold) {
-        _loadMoreItems();
-      }
-      _queue.removeAt(0);
+    if (id + _bufferPadding > _curBuffer.length) {
+      _loadMoreItems();
     }
-  }
-
-  int size() {
-    return queue.length;
+    if (_bufHead + _curBuffer.length > id) {
+      return _curBuffer[id - _bufHead];
+    }
+    final completer = Completer<CatImage>();
+    _waitingCompleters[id] = completer;
+    if (!_isLoading) {
+      _loadMoreItems();
+    }
+    return completer.future;
   }
 }

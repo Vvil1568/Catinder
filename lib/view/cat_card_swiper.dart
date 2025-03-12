@@ -20,11 +20,12 @@ class CatCardSwiper extends ConsumerWidget {
     final catRepository = ref.watch(catRepositoryProvider);
     return Expanded(
       child: CardSwiper(
+        duration: const Duration(milliseconds: 500),
         controller: controller,
-        cardsCount: 1,
-        numberOfCardsDisplayed: 1,
+        cardsCount: 0x7FFFFFFFFFFFFFFF,
+        numberOfCardsDisplayed: 3,
         cardBuilder: (context, index, percentThresholdX, percentThresholdY) {
-          FutureOr<CatImage> catImage = catRepository.top(offset: index);
+          FutureOr<CatImage> catImage = catRepository.get(index);
           if (catImage is CatImage) {
             return CatCard(catImage: catImage);
           } else {
@@ -45,7 +46,6 @@ class CatCardSwiper extends ConsumerWidget {
         },
         onSwipe: (prev, cur, dir) {
           onSwipe.call(dir);
-          catRepository.pop();
           return true;
         },
       ),
