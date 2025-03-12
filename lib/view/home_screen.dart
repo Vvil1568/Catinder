@@ -51,6 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
               controller.swipe(CardSwiperDirection.right);
             },
             emoji: '😻',
+            spawnParticles: false,
           ),
         );
         Widget dislikeButton = Flexible(

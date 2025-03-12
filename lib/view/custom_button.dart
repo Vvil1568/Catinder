@@ -6,12 +6,14 @@ class CustomButton extends StatelessWidget {
   final void Function() onPressed;
   final IconData icon;
   final String emoji;
+  final bool spawnParticles;
 
   const CustomButton(
       {super.key,
       required this.icon,
       required this.onPressed,
-      required this.emoji});
+      required this.emoji,
+      this.spawnParticles = true});
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +21,9 @@ class CustomButton extends StatelessWidget {
     return ElevatedButton(
       onPressed: () {
         onPressed.call();
-        emojiConfetti(context, emoji);
+        if (spawnParticles) {
+          emojiConfetti(context, emoji);
+        }
       },
       style: ButtonStyle(
         backgroundColor:
