@@ -62,7 +62,7 @@
 ## 📥 Скачать приложение
 
 Хотите попробовать? Скачайте актуальную версию APK по ссылке:  
-[Скачать Catinder APK](https://github.com/Vvil1568/Catinder/releases/download/release/catinder.apk)
+[Скачать Catinder APK]([https://github.com/Vvil1568/Catinder/releases/download/release/catinder.apk](https://github.com/Vvil1568/Catinder/releases/download/release_pro/app-release.apk))
 
 ---
 
