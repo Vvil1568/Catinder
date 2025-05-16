@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../util/particle_utils.dart';
+import 'package:catinder/util/particle_utils.dart';
 
 class CustomButton extends StatelessWidget {
   final void Function() onPressed;

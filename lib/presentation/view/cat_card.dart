@@ -1,10 +1,9 @@
-import 'package:catinder/data/model/cat_image.dart';
+import 'package:catinder/domain/entities/cat_image_entity.dart';
+import 'package:catinder/presentation/view/detailed_info.dart';
 import 'package:flutter/material.dart';
 
-import 'detailed_info.dart';
-
 class CatCard extends StatelessWidget {
-  final CatImage catImage;
+  final CatImageEntity catImage;
 
   const CatCard({super.key, required this.catImage});
 
@@ -32,11 +31,28 @@ class CatCard extends StatelessWidget {
                   },
                   child: Image.network(
                     catImage.url,
+                    loadingBuilder: (BuildContext context, Widget child,
+                        ImageChunkEvent? loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Center(
+                        child: CircularProgressIndicator(
+                          value: loadingProgress.expectedTotalBytes != null
+                              ? loadingProgress.cumulativeBytesLoaded /
+                                  loadingProgress.expectedTotalBytes!
+                              : null,
+                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return Center(
+                          child: Icon(Icons.broken_image,
+                              size: 40, color: Colors.grey[600]));
+                    },
                   ),
                 ),
               ),
               Text(
-                "Breed: ${catImage.breeds[0].name}",
+                "Breed: ${catImage.breed.name}",
                 style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,

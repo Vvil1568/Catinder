@@ -1,28 +1,47 @@
-import 'package:catinder/view/cat_card_swiper.dart';
+import 'package:catinder/data/provider/cat_repository_provider.dart';
+import 'package:catinder/domain/entities/cat_image_entity.dart';
+import 'package:catinder/presentation/provider/liked_cats_provider.dart';
+import 'package:catinder/presentation/view/cat_card_swiper.dart';
+import 'package:catinder/presentation/view/liked_cats_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
-import '../util/particle_utils.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:catinder/util/particle_utils.dart';
 import 'custom_button.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  var likeCount = 0;
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   final CardSwiperController controller = CardSwiperController();
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final likedCatsNotifier = ref.watch(likedCatsProvider);
+    final likeCount = likedCatsNotifier.likedCats.length;
 
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.primaryContainer,
         title: const Text('Catinder'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.favorite, color: Colors.red[400]),
+            tooltip: 'Liked Cats',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const LikedCatsScreen()),
+              );
+            },
+          ),
+        ],
       ),
       body: LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
@@ -35,13 +54,31 @@ class _HomeScreenState extends State<HomeScreen> {
         );
         Widget cardSwiper = CatCardSwiper(
           controller: controller,
-          onSwipe: (dir) {
+          onSwipe: (prevIndex, dir) async {
             if (dir == CardSwiperDirection.right) {
-              setState(() {
-                emojiConfetti(context, '😻');
-                likeCount++;
-              });
-            }
+              emojiConfetti(context, '😻');
+              if (prevIndex != null) {
+                final catRepository = ref.read(catRepositoryProvider);
+                final catImageFutureOr = catRepository.get(prevIndex);
+                CatImageEntity likedCatImage;
+                if (catImageFutureOr is Future<CatImageEntity>) {
+                  try {
+                    likedCatImage = await catImageFutureOr;
+                    ref.read(likedCatsProvider.notifier).addCat(likedCatImage);
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Could not like cat: $e')));
+                    }
+                  }
+                } else {
+                  likedCatImage = catImageFutureOr;
+                  ref.read(likedCatsProvider.notifier).addCat(likedCatImage);
+                }
+              }
+            } else if (dir == CardSwiperDirection.left ||
+                dir == CardSwiperDirection.bottom ||
+                dir == CardSwiperDirection.top) {}
           },
         );
         Widget likeButton = Flexible(
@@ -74,8 +111,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   likeCounter,
-                  likeButton,
                   dislikeButton,
+                  likeButton,
                 ],
               ),
               cardSwiper,
@@ -90,8 +127,8 @@ class _HomeScreenState extends State<HomeScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  likeButton,
                   dislikeButton,
+                  likeButton,
                 ],
               ),
               SizedBox(
