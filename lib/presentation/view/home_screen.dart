@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:catinder/util/particle_utils.dart';
+import '../../domain/provider/domain_providers.dart';
 import 'custom_button.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -18,6 +19,23 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final CardSwiperController controller = CardSwiperController();
+
+  @override
+  void initState() {
+    super.initState();
+    _setupNetworkListener();
+  }
+
+  void _setupNetworkListener() {
+    final networkService = ref.read(networkServiceProvider);
+    networkService.isConnectedStream.listen((isConnected) {
+      if (!isConnected && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No internet connection')),
+        );
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

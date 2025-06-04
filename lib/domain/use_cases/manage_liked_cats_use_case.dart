@@ -1,11 +1,23 @@
+import '../../data/local/database.dart';
 import '../entities/cat_image_entity.dart';
-import '../entities/liked_cat.dart';
+import '../entities/liked_cat_entity.dart';
 
 class ManageLikedCatsUseCase {
-  final List<LikedCat> _allLikedCats = [];
+  final AppDatabase database;
+  late List<LikedCatEntity> _allLikedCats = [];
   String? _currentBreedFilter;
 
-  List<LikedCat> getFilteredLikedCats() {
+  ManageLikedCatsUseCase(this.database) {
+    _loadLikedCats();
+  }
+
+  Future<void> _loadLikedCats() async {
+    _allLikedCats = (await database.getLikedCats())
+        .map((e) => LikedCatEntity(catImage: e.catData, likedDate: e.likedDate))
+        .toList();
+  }
+
+  List<LikedCatEntity> getFilteredLikedCats() {
     if (_currentBreedFilter == null || _currentBreedFilter!.isEmpty) {
       return List.unmodifiable(_allLikedCats);
     }
@@ -25,15 +37,18 @@ class ManageLikedCatsUseCase {
     return breeds;
   }
 
-  void addCat(CatImageEntity catImage) {
+  Future<void> addCat(CatImageEntity catImage) async {
     if (!_allLikedCats.any((lc) => lc.catImage.id == catImage.id)) {
-      final likedCat = LikedCat(catImage: catImage, likedDate: DateTime.now());
+      final likedCat =
+          LikedCatEntity(catImage: catImage, likedDate: DateTime.now());
       _allLikedCats.add(likedCat);
+      await database.addLikedCat(likedCat);
     }
   }
 
-  void removeCat(LikedCat likedCat) {
+  Future<void> removeCat(LikedCatEntity likedCat) async {
     _allLikedCats.removeWhere((lc) => lc.catImage.id == likedCat.catImage.id);
+    await database.removeLikedCat(likedCat.catImage.id);
   }
 
   void filterByBreed(String? breedName) {

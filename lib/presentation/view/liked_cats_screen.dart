@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:catinder/presentation/provider/liked_cats_provider.dart';
 import 'package:catinder/presentation/view/detailed_info.dart';
 import 'package:flutter/material.dart';
@@ -70,26 +71,13 @@ class LikedCatsScreen extends ConsumerWidget {
                     leading: SizedBox(
                       width: 70,
                       height: 70,
-                      child: Image.network(
-                        catImage.url,
+                      child: CachedNetworkImage(
+                        imageUrl: catImage.url,
                         fit: BoxFit.cover,
-                        loadingBuilder: (BuildContext context, Widget child,
-                            ImageChunkEvent? loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Center(
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.0,
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded /
-                                      loadingProgress.expectedTotalBytes!
-                                  : null,
-                            ),
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) {
-                          return Icon(Icons.broken_image,
-                              size: 40, color: Colors.grey[400]);
-                        },
+                        placeholder: (context, url) =>
+                            CircularProgressIndicator(),
+                        errorWidget: (context, url, error) =>
+                            Icon(Icons.broken_image),
                       ),
                     ),
                     title: Text(breedName,

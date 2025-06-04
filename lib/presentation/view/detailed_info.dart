@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -30,32 +31,12 @@ class BreedDetailsScreen extends StatelessWidget {
                     style: Theme.of(context).textTheme.headlineMedium,
                   ),
                   SizedBox(height: 8),
-                  Image.network(
-                    catImage.url,
+                  CachedNetworkImage(
+                    imageUrl: catImage.url,
                     fit: BoxFit.cover,
-                    loadingBuilder: (BuildContext context, Widget child,
-                        ImageChunkEvent? loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Center(
-                        child: CircularProgressIndicator(
-                          value: loadingProgress.expectedTotalBytes != null
-                              ? loadingProgress.cumulativeBytesLoaded /
-                                  loadingProgress.expectedTotalBytes!
-                              : null,
-                        ),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) {
-                      return AspectRatio(
-                        aspectRatio: 16 / 9,
-                        child: Container(
-                          color: Colors.grey[200],
-                          child: Center(
-                              child: Icon(Icons.broken_image,
-                                  size: 50, color: Colors.grey[600])),
-                        ),
-                      );
-                    },
+                    placeholder: (context, url) => CircularProgressIndicator(),
+                    errorWidget: (context, url, error) =>
+                        Icon(Icons.broken_image),
                   ),
                   SizedBox(height: 8),
                   if (breed.origin != null)

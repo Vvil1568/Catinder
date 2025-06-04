@@ -5,9 +5,17 @@ import 'package:catinder/data/service/api_service.dart';
 import 'package:catinder/domain/repositories/cat_repository_interface.dart';
 import 'package:catinder/domain/entities/cat_image_entity.dart';
 import 'package:catinder/data/mappers/cat_mappers.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/cupertino.dart';
+
+import '../local/database.dart';
 
 class CatRepository implements CatRepositoryInterface {
-  final List<CatImage> _curBuffer = [];
+  final AppDatabase database;
+  final Connectivity connectivity;
+  bool _isOnline = true;
+
+  final List<CatImageEntity> _curBuffer = [];
   int _bufHead = 0;
   bool _isLoading = false;
   final int _bufferPadding = 5;
@@ -15,12 +23,43 @@ class CatRepository implements CatRepositoryInterface {
 
   final Map<int, Completer<CatImageEntity>> _waitingCompleters = {};
 
-  CatRepository() {
+  bool isInitialized = false;
+  final Completer<bool> initialized = Completer();
+
+  CatRepository({required this.database, required this.connectivity}) {
+    _initNetworkListener();
     _init();
   }
 
+  void _initNetworkListener() {
+    connectivity.onConnectivityChanged.listen((result) {
+      _isOnline = !result.contains(ConnectivityResult.none);
+      if (_isOnline && _curBuffer.isEmpty) {
+        _loadMoreItems();
+      }
+    });
+  }
+
   Future<void> _init() async {
-    await _loadMoreItems();
+    final connectivityResult = await connectivity.checkConnectivity();
+    _isOnline = !connectivityResult.contains(ConnectivityResult.none);
+
+    if (_isOnline) {
+      await _loadMoreItems();
+    } else {
+      await _loadCachedItems();
+    }
+    initialized.complete(true);
+    isInitialized = true;
+  }
+
+  Future<void> _loadCachedItems() async {
+    try {
+      final cachedCats = await database.getCachedCats();
+      _curBuffer.addAll(cachedCats);
+    } catch (e) {
+      debugPrint('Error loading cached cats: $e');
+    }
   }
 
   Future<void> _loadMoreItems() async {
@@ -30,7 +69,17 @@ class CatRepository implements CatRepositoryInterface {
 
     try {
       final List<CatImage> newItemsDto = await getCatInfo(pageSize: _pageSize);
-      _curBuffer.addAll(newItemsDto);
+      _curBuffer
+          .addAll(newItemsDto.map((entity) => CatImageMapper.fromDto(entity)));
+
+      for (final catDto in newItemsDto) {
+        try {
+          final entity = CatImageMapper.fromDto(catDto);
+          database.cacheCat(entity);
+        } catch (e) {
+          debugPrint('Error caching cat: $e');
+        }
+      }
 
       final List<int> keysToProcess = _waitingCompleters.keys.toList();
       for (final key in keysToProcess) {
@@ -39,8 +88,7 @@ class CatRepository implements CatRepositoryInterface {
             final completer = _waitingCompleters[key]!;
             if (!completer.isCompleted) {
               try {
-                final entity =
-                    CatImageMapper.fromDto(_curBuffer[key - _bufHead]);
+                final entity = _curBuffer[key - _bufHead];
                 completer.complete(entity);
               } catch (e) {
                 completer.completeError(e);
@@ -69,7 +117,11 @@ class CatRepository implements CatRepositoryInterface {
   }
 
   @override
-  FutureOr<CatImageEntity> get(int id) {
+  Future<CatImageEntity> get(int id) async {
+    if (!isInitialized) {
+      await initialized.future;
+    }
+
     if (id < _bufHead) {
       _bufHead = 0;
       _curBuffer.clear();
@@ -83,7 +135,7 @@ class CatRepository implements CatRepositoryInterface {
     }
     if (_bufHead + _curBuffer.length > id) {
       try {
-        return CatImageMapper.fromDto(_curBuffer[id - _bufHead]);
+        return _curBuffer[id - _bufHead];
       } catch (e) {
         return Future.error(e);
       }

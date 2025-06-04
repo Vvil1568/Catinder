@@ -1,6 +1,7 @@
 import 'package:catinder/domain/entities/cat_image_entity.dart';
 import 'package:catinder/presentation/view/detailed_info.dart';
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class CatCard extends StatelessWidget {
   final CatImageEntity catImage;
@@ -29,25 +30,17 @@ class CatCard extends StatelessWidget {
                       ),
                     );
                   },
-                  child: Image.network(
-                    catImage.url,
-                    loadingBuilder: (BuildContext context, Widget child,
-                        ImageChunkEvent? loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Center(
-                        child: CircularProgressIndicator(
-                          value: loadingProgress.expectedTotalBytes != null
-                              ? loadingProgress.cumulativeBytesLoaded /
-                                  loadingProgress.expectedTotalBytes!
-                              : null,
-                        ),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) {
-                      return Center(
-                          child: Icon(Icons.broken_image,
-                              size: 40, color: Colors.grey[600]));
-                    },
+                  child: RepaintBoundary(
+                    key: Key(catImage.id.toString()),
+                    child: CachedNetworkImage(
+                      imageUrl: catImage.url,
+                      cacheKey: catImage.id,
+                      useOldImageOnUrlChange: true,
+                      placeholder: (context, url) =>
+                          CircularProgressIndicator(),
+                      errorWidget: (context, url, error) =>
+                          Icon(Icons.broken_image),
+                    ),
                   ),
                 ),
               ),

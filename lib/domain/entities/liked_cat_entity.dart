@@ -1,10 +1,10 @@
 import 'cat_image_entity.dart';
 
-class LikedCat {
+class LikedCatEntity {
   final CatImageEntity catImage;
   final DateTime likedDate;
 
-  LikedCat({
+  LikedCatEntity({
     required this.catImage,
     required this.likedDate,
   });
