@@ -30,17 +30,11 @@ class CatCard extends StatelessWidget {
                       ),
                     );
                   },
-                  child: RepaintBoundary(
-                    key: Key(catImage.id.toString()),
-                    child: CachedNetworkImage(
-                      imageUrl: catImage.url,
-                      cacheKey: catImage.id,
-                      useOldImageOnUrlChange: true,
-                      placeholder: (context, url) =>
-                          CircularProgressIndicator(),
-                      errorWidget: (context, url, error) =>
-                          Icon(Icons.broken_image),
-                    ),
+                  child: CachedNetworkImage(
+                    imageUrl: catImage.url,
+                    placeholder: (context, url) => CircularProgressIndicator(),
+                    errorWidget: (context, url, error) =>
+                        Icon(Icons.broken_image),
                   ),
                 ),
               ),

@@ -68,16 +68,25 @@ class CatRepository implements CatRepositoryInterface {
     _isLoading = true;
 
     try {
-      final List<CatImage> newItemsDto = await getCatInfo(pageSize: _pageSize);
-      _curBuffer
-          .addAll(newItemsDto.map((entity) => CatImageMapper.fromDto(entity)));
+      if (!isInitialized) {
+        await initialized.future;
+      }
 
-      for (final catDto in newItemsDto) {
-        try {
-          final entity = CatImageMapper.fromDto(catDto);
-          database.cacheCat(entity);
-        } catch (e) {
-          debugPrint('Error caching cat: $e');
+      if (!_isOnline) {
+        await _loadCachedItems();
+      } else {
+        final List<CatImage> newItemsDto =
+            await getCatInfo(pageSize: _pageSize);
+        _curBuffer.addAll(
+            newItemsDto.map((entity) => CatImageMapper.fromDto(entity)));
+
+        for (final catDto in newItemsDto) {
+          try {
+            final entity = CatImageMapper.fromDto(catDto);
+            database.cacheCat(entity);
+          } catch (e) {
+            debugPrint('Error caching cat: $e');
+          }
         }
       }
 
@@ -99,7 +108,7 @@ class CatRepository implements CatRepositoryInterface {
         }
       }
 
-      if (_waitingCompleters.isNotEmpty && newItemsDto.isNotEmpty) {
+      if (_waitingCompleters.isNotEmpty) {
         _loadMoreItems();
       }
     } catch (e, stackTrace) {
@@ -117,11 +126,7 @@ class CatRepository implements CatRepositoryInterface {
   }
 
   @override
-  Future<CatImageEntity> get(int id) async {
-    if (!isInitialized) {
-      await initialized.future;
-    }
-
+  FutureOr<CatImageEntity> get(int id) {
     if (id < _bufHead) {
       _bufHead = 0;
       _curBuffer.clear();
