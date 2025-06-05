@@ -64,10 +64,11 @@ void main() {
         .thenAnswer((_) async => [likedCat]);
 
     final useCase = ManageLikedCatsUseCase(mockDatabase);
-    await Future.delayed(Duration.zero);
+    await useCase.init();
 
-    expect(useCase.getFilteredLikedCats().first.catImage, likedCatEntity.catImage);
-    expect(useCase.getFilteredLikedCats().first.likedDate, likedCatEntity.likedDate);
-    verify(() => mockDatabase.getLikedCats()).called(2);
+    final likedCatRes = useCase.getFilteredLikedCats().first;
+    expect(likedCatRes.catImage, likedCatEntity.catImage);
+    expect(likedCatRes.likedDate, likedCatEntity.likedDate);
+    verify(() => mockDatabase.getLikedCats()).called(1);
   });
 }
