@@ -9,6 +9,11 @@ class LikedCatsNotifier extends ChangeNotifier {
 
   LikedCatsNotifier(this._manageLikedCatsUseCase);
 
+  Future<void> loadInitialCats() async {
+    await _manageLikedCatsUseCase.init();
+    notifyListeners();
+  }
+
   List<LikedCatEntity> get likedCats =>
       _manageLikedCatsUseCase.getFilteredLikedCats();
 

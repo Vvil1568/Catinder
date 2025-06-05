@@ -5,5 +5,7 @@ import 'package:catinder/presentation/notifier/liked_cats_notifier.dart';
 
 final likedCatsProvider = ChangeNotifierProvider<LikedCatsNotifier>((ref) {
   final manageLikedCatsUseCase = ref.watch(manageLikedCatsUseCaseProvider);
-  return LikedCatsNotifier(manageLikedCatsUseCase);
+  final notifier = LikedCatsNotifier(manageLikedCatsUseCase);
+  notifier.loadInitialCats();
+  return notifier;
 });

@@ -7,8 +7,10 @@ class ManageLikedCatsUseCase {
   late List<LikedCatEntity> _allLikedCats = [];
   String? _currentBreedFilter;
 
-  ManageLikedCatsUseCase(this.database) {
-    _loadLikedCats();
+  ManageLikedCatsUseCase(this.database);
+
+  Future<void> init() async {
+    await _loadLikedCats();
   }
 
   Future<void> _loadLikedCats() async {
